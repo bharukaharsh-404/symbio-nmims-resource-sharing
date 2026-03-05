@@ -1,4 +1,11 @@
-import { BookOpen, Home, Package, User, Utensils } from "lucide-react";
+import {
+  BookOpen,
+  HandHelping,
+  Home,
+  Package,
+  User,
+  Utensils,
+} from "lucide-react";
 import type React from "react";
 import type { Tab } from "../App";
 
@@ -13,6 +20,7 @@ const NAV_ITEMS: { id: Tab; label: string; Icon: React.ElementType }[] = [
   { id: "food", label: "Food", Icon: Utensils },
   { id: "study", label: "Study", Icon: BookOpen },
   { id: "profile", label: "Profile", Icon: User },
+  { id: "requests", label: "Requests", Icon: HandHelping },
 ];
 
 export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {

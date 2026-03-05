@@ -7,6 +7,7 @@ import { useActor } from "../hooks/useActor";
 
 interface FoodScreenProps {
   onPointsEarned: (pts: number) => void;
+  onFoodClaimed?: () => void;
 }
 
 interface FoodAlertLocal {
@@ -80,7 +81,10 @@ function getTimeBadge(timeLeft: string): string {
   return "bg-blue-100 text-blue-700 border-blue-200";
 }
 
-export default function FoodScreen({ onPointsEarned }: FoodScreenProps) {
+export default function FoodScreen({
+  onPointsEarned,
+  onFoodClaimed,
+}: FoodScreenProps) {
   const { actor, isFetching } = useActor();
   const [alerts, setAlerts] = useState<FoodAlertLocal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -114,10 +118,12 @@ export default function FoodScreen({ onPointsEarned }: FoodScreenProps) {
       if (actor) {
         await actor.claimFoodAlert(alert.id);
       }
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setAlerts((prev) =>
         prev.map((a) => (a.id === alert.id ? { ...a, claimed: true } : a)),
       );
       onPointsEarned(15);
+      onFoodClaimed?.();
       toast.success(`Food claimed from ${alert.source} — +15 Green Points! 🌿`);
     } catch {
       toast.error("Failed to claim. Please try again.");
@@ -261,6 +267,19 @@ export default function FoodScreen({ onPointsEarned }: FoodScreenProps) {
             <Utensils size={40} className="mx-auto mb-3 opacity-30" />
             <p className="text-sm font-medium">No food alerts right now</p>
             <p className="text-xs mt-1 opacity-70">Check back at meal times!</p>
+          </div>
+        )}
+
+        {!isLoading && alerts.length > 0 && activeCount === 0 && (
+          <div
+            data-ocid="food.all_claimed.empty_state"
+            className="bg-amber-50 border border-amber-100 rounded-2xl p-8 text-center mt-2"
+          >
+            <Utensils size={36} className="mx-auto mb-3 text-amber-400" />
+            <p className="text-sm font-semibold text-amber-800">
+              No food available right now.
+            </p>
+            <p className="text-xs text-amber-600 mt-1.5">Check back later!</p>
           </div>
         )}
       </div>

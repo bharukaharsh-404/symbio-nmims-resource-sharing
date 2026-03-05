@@ -93,6 +93,42 @@
   }
 }
 
+/* Full-viewport eco background for desktop — makes the area outside the
+   480px app shell look intentional on wide screens (pitch/demo mode). */
+.page-bg {
+  background: radial-gradient(
+    ellipse at center,
+    oklch(0.93 0.04 155) 0%,
+    oklch(0.98 0.01 145) 60%,
+    oklch(0.96 0.02 150) 100%
+  );
+  /* Subtle leaf-vein pattern via repeating-linear-gradient */
+  background-image:
+    radial-gradient(
+      ellipse at center,
+      oklch(0.93 0.04 155) 0%,
+      oklch(0.98 0.01 145) 60%,
+      oklch(0.96 0.02 150) 100%
+    ),
+    repeating-linear-gradient(
+      120deg,
+      transparent,
+      transparent 60px,
+      oklch(0.92 0.03 155 / 0.18) 60px,
+      oklch(0.92 0.03 155 / 0.18) 61px
+    ),
+    repeating-linear-gradient(
+      60deg,
+      transparent,
+      transparent 60px,
+      oklch(0.9 0.04 145 / 0.12) 60px,
+      oklch(0.9 0.04 145 / 0.12) 61px
+    );
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
 /* Mobile shell container */
 .app-shell {
   max-width: 480px;

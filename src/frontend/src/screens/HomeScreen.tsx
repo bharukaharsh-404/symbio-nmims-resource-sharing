@@ -2,6 +2,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Bell,
   BookOpen,
+  Box,
   Leaf,
   Package,
   TrendingUp,
@@ -12,6 +13,8 @@ import type { Tab } from "../App";
 interface HomeScreenProps {
   greenPoints: number;
   onNavigate: (tab: Tab) => void;
+  itemsBorrowedCount: number;
+  foodClaimedCount: number;
 }
 
 const QUICK_CARDS = [
@@ -72,6 +75,8 @@ function getLevel(points: number): {
 export default function HomeScreen({
   greenPoints,
   onNavigate,
+  itemsBorrowedCount,
+  foodClaimedCount,
 }: HomeScreenProps) {
   const levelInfo = getLevel(greenPoints);
   const progressPct = Math.min(
@@ -149,6 +154,83 @@ export default function HomeScreen({
                 {levelInfo.next - greenPoints} pts to reach Level{" "}
                 {levelInfo.level + 1}
               </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Impact Stats Banner */}
+      <div className="px-5 mt-5">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest mb-3">
+          Campus Impact
+        </h2>
+        <div
+          data-ocid="home.impact_banner.section"
+          className="relative rounded-2xl p-4 overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(135deg, oklch(0.55 0.15 155) 0%, oklch(0.48 0.13 148) 100%)",
+          }}
+        >
+          {/* Decorative circles */}
+          <div className="absolute -top-5 -right-5 w-24 h-24 rounded-full bg-white/5" />
+          <div className="absolute -bottom-6 -right-1 w-16 h-16 rounded-full bg-white/5" />
+
+          <div className="relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Items Shared */}
+            <div
+              data-ocid="home.impact_items_shared.card"
+              className="flex flex-row sm:flex-col items-center sm:items-center gap-3 sm:gap-2 bg-white/10 rounded-xl px-4 py-3 sm:py-4"
+            >
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <Box size={16} className="text-white" />
+              </div>
+              <div className="flex sm:flex-col items-center gap-2 sm:gap-0">
+                <span className="text-2xl font-bold text-white font-display leading-none">
+                  {itemsBorrowedCount}
+                </span>
+                <span className="text-white/70 text-xs sm:mt-1">
+                  Items Shared
+                </span>
+              </div>
+            </div>
+
+            {/* Food Rescued */}
+            <div
+              data-ocid="home.impact_food_rescued.card"
+              className="flex flex-row sm:flex-col items-center sm:items-center gap-3 sm:gap-2 bg-white/10 rounded-xl px-4 py-3 sm:py-4"
+            >
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <Utensils size={16} className="text-white" />
+              </div>
+              <div className="flex sm:flex-col items-center gap-2 sm:gap-0">
+                <span className="text-2xl font-bold text-white font-display leading-none">
+                  {foodClaimedCount}
+                </span>
+                <span className="text-white/70 text-xs sm:mt-1">
+                  Food Rescued
+                </span>
+              </div>
+            </div>
+
+            {/* CO2 Saved */}
+            <div
+              data-ocid="home.impact_co2_saved.card"
+              className="flex flex-row sm:flex-col items-center sm:items-center gap-3 sm:gap-2 bg-white/10 rounded-xl px-4 py-3 sm:py-4"
+            >
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <Leaf size={16} className="text-white" />
+              </div>
+              <div className="flex sm:flex-col items-center gap-2 sm:gap-0">
+                <span className="text-2xl font-bold text-white font-display leading-none">
+                  {(itemsBorrowedCount * 0.5 + foodClaimedCount * 0.3).toFixed(
+                    1,
+                  )}
+                </span>
+                <span className="text-white/70 text-xs sm:mt-1">
+                  CO₂ Saved (kg)
+                </span>
+              </div>
             </div>
           </div>
         </div>
