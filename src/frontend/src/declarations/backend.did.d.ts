@@ -24,6 +24,14 @@ export interface FoodAlert {
   'quantity' : bigint,
   'timeLeft' : string,
 }
+export interface RequestItem {
+  'id' : bigint,
+  'title' : string,
+  'postedBy' : string,
+  'fulfilled' : boolean,
+  'deadline' : string,
+  'category' : string,
+}
 export interface StudyRoom {
   'id' : bigint,
   'status' : string,
@@ -43,19 +51,24 @@ export type UserRole = { 'admin' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addRequest' : ActorMethod<[string, string, string, string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'awardGreenPoints' : ActorMethod<[Principal, bigint], undefined>,
+  'awardGreenPoints' : ActorMethod<[bigint], undefined>,
   'bookStudyRoom' : ActorMethod<[bigint], undefined>,
   'claimBorrowItem' : ActorMethod<[bigint], undefined>,
   'claimFoodAlert' : ActorMethod<[bigint], undefined>,
+  'fulfillRequest' : ActorMethod<[bigint], undefined>,
   'getAllBorrowItems' : ActorMethod<[], Array<BorrowItem>>,
   'getAllFoodAlerts' : ActorMethod<[], Array<FoodAlert>>,
+  'getAllRequests' : ActorMethod<[], Array<RequestItem>>,
   'getAllStudyRooms' : ActorMethod<[], Array<StudyRoom>>,
   'getCallerUserProfile' : ActorMethod<[], UserProfile>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getLeaderboard' : ActorMethod<[], Array<UserProfile>>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'releaseStudyRoom' : ActorMethod<[bigint], undefined>,
+  'returnBorrowItem' : ActorMethod<[bigint], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'updateCallerUserProfile' : ActorMethod<[string, string, string], undefined>,
 }

@@ -55,8 +55,8 @@ export default function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               </span>
               {isActive && (
                 <span
-                  className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full"
-                  style={{ background: "oklch(var(--primary))" }}
+                  className="absolute inset-x-1 top-1 bottom-1 rounded-full -z-10"
+                  style={{ background: "oklch(var(--primary) / 0.1)" }}
                 />
               )}
             </button>

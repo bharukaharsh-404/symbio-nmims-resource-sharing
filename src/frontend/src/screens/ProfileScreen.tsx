@@ -1,34 +1,47 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
-  BookOpen,
+  HandHelping,
   Leaf,
   Loader2,
+  LogOut,
   Package,
+  RefreshCw,
   RotateCcw,
   Trophy,
   Utensils,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { BorrowItem } from "../App";
+import type { BorrowItem, InventoryItem, UserProfile } from "../App";
 
 interface ProfileScreenProps {
   greenPoints: number;
   borrowItems: BorrowItem[];
   onReturnItem: (id: bigint) => void;
   returnCount: number;
-  borrowedCount: number;
+  itemsLendedCount: number;
   foodClaimedCount: number;
+  myInventory: InventoryItem[];
+  userProfile: UserProfile | null;
+  leaderboard: UserProfile[];
+  onLogout: () => void;
+  onResetDemo?: () => void;
+  localName?: string;
+  localDept?: string;
 }
 
-interface LeaderboardEntry {
-  name: string;
-  department: string;
-  points: number;
-  initials: string;
-}
-
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
+const MOCK_LEADERBOARD_FALLBACK = [
   {
     name: "Arjun Patel",
     department: "MBA 2nd Year",
@@ -69,6 +82,17 @@ const MEDAL_CONFIGS = [
 
 const AVATAR_COLORS = ["green-gradient", "blue-gradient", "amber-gradient"];
 
+const CATEGORY_COLORS: Record<string, string> = {
+  Electronics: "bg-blue-50 text-blue-700 border-blue-100",
+  Accessories: "bg-purple-50 text-purple-700 border-purple-100",
+  Books: "bg-teal-50 text-teal-700 border-teal-100",
+  Stationery: "bg-pink-50 text-pink-700 border-pink-100",
+  Sports: "bg-orange-50 text-orange-700 border-orange-100",
+  "Lab Equipment": "bg-yellow-50 text-yellow-700 border-yellow-100",
+  Utilities: "bg-gray-50 text-gray-700 border-gray-100",
+  Other: "bg-gray-50 text-gray-700 border-gray-100",
+};
+
 function getLevel(points: number): {
   level: number;
   name: string;
@@ -86,20 +110,39 @@ export default function ProfileScreen({
   borrowItems,
   onReturnItem,
   returnCount,
-  borrowedCount,
+  itemsLendedCount,
   foodClaimedCount,
+  myInventory,
+  userProfile,
+  leaderboard,
+  onLogout,
+  onResetDemo,
+  localName,
+  localDept,
 }: ProfileScreenProps) {
-  const profileName = "Priya Mehta";
-  const profileDept = "BBA 3rd Year";
-  const profileInitials = "PM";
-  const leaderboard = MOCK_LEADERBOARD;
+  const profileName = userProfile?.name || localName || "You";
+  const profileDept = userProfile?.department || localDept || "NMIMS Student";
+  const profileInitials =
+    userProfile?.avatarInitials ??
+    (profileName !== "You" ? profileName.slice(0, 2).toUpperCase() : "YO");
+
+  // Normalise leaderboard to a renderable shape (backend UserProfile or mock fallback)
+  const leaderboardEntries =
+    leaderboard.length > 0
+      ? leaderboard.map((u) => ({
+          name: u.name,
+          department: u.department,
+          points: Number(u.greenPoints),
+          initials: u.avatarInitials,
+        }))
+      : MOCK_LEADERBOARD_FALLBACK;
 
   const [returning, setReturning] = useState<bigint | null>(null);
 
   const handleShareImpact = () => {
-    const co2 = (borrowedCount * 0.5 + foodClaimedCount * 0.3).toFixed(1);
+    const co2 = (itemsLendedCount * 0.5 + foodClaimedCount * 0.3).toFixed(1);
     const foodSavedKg = (foodClaimedCount * 0.35).toFixed(1);
-    const text = `I've saved ${co2} kg CO2 on Symbio! 🌱 Green Score: ${greenPoints} pts | Items Borrowed: ${borrowedCount} | Food Saved: ${foodSavedKg} kg (${foodClaimedCount} meals) | Items Returned: ${returnCount} — #Symbio #NMIMS`;
+    const text = `I've saved ${co2} kg CO2 on Symbio! 🌱 Green Score: ${greenPoints} pts | Items Lended: ${itemsLendedCount} | Food Saved: ${foodSavedKg} kg (${foodClaimedCount} meals) | Items Returned: ${returnCount} — #Symbio #NMIMS`;
     navigator.clipboard
       .writeText(text)
       .then(() => {
@@ -110,6 +153,7 @@ export default function ProfileScreen({
       });
   };
 
+  // Only community borrowItems (not myInventory) appear in "My Borrowed Items"
   const borrowedItems = borrowItems.filter(
     (item) => item.status === "Borrowed",
   );
@@ -132,13 +176,25 @@ export default function ProfileScreen({
   return (
     <div className="min-h-screen pb-4">
       {/* Header */}
-      <div className="px-5 pt-12 pb-4">
-        <h1 className="text-2xl font-bold font-display text-foreground">
-          Profile
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Your sustainability journey
-        </p>
+      <div className="px-5 pt-12 pb-4 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-display text-foreground">
+            Profile
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Your sustainability journey
+          </p>
+        </div>
+        <button
+          type="button"
+          data-ocid="profile.logout_button"
+          onClick={onLogout}
+          className="mt-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-destructive transition-colors px-2 py-1 rounded-lg hover:bg-red-50"
+          title="Logout"
+        >
+          <LogOut size={14} />
+          Logout
+        </button>
       </div>
 
       {/* Impact Card */}
@@ -163,7 +219,7 @@ export default function ProfileScreen({
           </div>
 
           {/* Stats Grid */}
-          <div className="relative z-10 grid grid-cols-2 gap-2.5 mb-4">
+          <div className="relative z-10 grid grid-cols-2 gap-2.5 mb-3">
             {/* Green Score */}
             <div
               data-ocid="profile.impact_card.green_score"
@@ -181,21 +237,21 @@ export default function ProfileScreen({
               <p className="text-[10px] text-white/60">pts earned</p>
             </div>
 
-            {/* Items Borrowed */}
+            {/* Items Lended — primary earning metric */}
             <div
-              data-ocid="profile.impact_card.items_borrowed"
-              className="bg-white/15 rounded-xl p-3 flex flex-col gap-1"
+              data-ocid="profile.impact_card.items_lended"
+              className="bg-emerald-400/20 border border-white/10 rounded-xl p-3 flex flex-col gap-1"
             >
               <div className="flex items-center gap-1.5">
-                <Package size={14} className="text-blue-200" />
+                <Package size={14} className="text-yellow-200" />
                 <span className="text-[10px] text-white/70 font-medium uppercase tracking-wide">
-                  Items Borrowed
+                  Items Lended
                 </span>
               </div>
               <p className="text-2xl font-bold text-white font-display leading-none">
-                {borrowedCount}
+                {itemsLendedCount}
               </p>
-              <p className="text-[10px] text-white/60">total borrows</p>
+              <p className="text-[10px] text-white/60">total lends</p>
             </div>
 
             {/* Food Saved */}
@@ -236,13 +292,17 @@ export default function ProfileScreen({
             </div>
           </div>
 
+          {/* Thin divider */}
+          <div className="relative z-10 border-t border-white/15 mb-3" />
+
           {/* CO2 Summary Line */}
           <div className="relative z-10 bg-white/10 rounded-xl px-3 py-2 mb-3 flex items-center gap-2">
             <Leaf size={13} className="text-emerald-200 shrink-0" />
             <p className="text-xs text-white/90 font-medium">
               CO₂ Saved:{" "}
               <span className="font-bold text-white">
-                {(borrowedCount * 0.5 + foodClaimedCount * 0.3).toFixed(1)} kg
+                {(itemsLendedCount * 0.5 + foodClaimedCount * 0.3).toFixed(1)}{" "}
+                kg
               </span>
               <span className="text-white/60">
                 {" "}
@@ -316,15 +376,97 @@ export default function ProfileScreen({
         </div>
       </div>
 
-      {/* My Borrowed Items */}
+      {/* ── My Inventory (items I've listed for others) ── */}
+      <div className="px-5 mt-5">
+        <div
+          data-ocid="profile.myinventory.section"
+          className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Package size={16} className="text-emerald-600" />
+            <h2 className="text-sm font-semibold text-emerald-800 uppercase tracking-widest">
+              My Inventory
+            </h2>
+            <span className="ml-auto text-[10px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full uppercase tracking-wide">
+              LENDER
+            </span>
+          </div>
+
+          {myInventory.length === 0 ? (
+            <div
+              data-ocid="profile.myinventory.empty_state"
+              className="text-center py-6"
+            >
+              <Package size={28} className="mx-auto mb-2 text-emerald-300" />
+              <p className="text-sm text-emerald-700 font-medium">
+                No items listed yet.
+              </p>
+              <p className="text-xs text-emerald-600 mt-1 opacity-70">
+                Use the + button on Home to list your first item!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {myInventory.map((item, index) => {
+                const isAvailable = item.status === "Available";
+                const catColor =
+                  CATEGORY_COLORS[item.category] ||
+                  "bg-gray-50 text-gray-700 border-gray-100";
+
+                return (
+                  <div
+                    key={item.id.toString()}
+                    data-ocid={`profile.myinventory.item.${index + 1}`}
+                    className="bg-white rounded-xl border border-emerald-100 p-3 card-hover"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                        <Package size={14} className="text-emerald-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {item.name}
+                        </p>
+                        {item.description && (
+                          <p className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                            {item.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span
+                            className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${catColor}`}
+                          >
+                            {item.category}
+                          </span>
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                              isAvailable
+                                ? "status-available"
+                                : "bg-amber-100 text-amber-700 border-amber-200"
+                            }`}
+                          >
+                            {isAvailable ? "Available" : "Being Borrowed"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── My Borrowed Items (from community) ── */}
       <div className="px-5 mt-5">
         <div className="flex items-center gap-2 mb-3">
-          <Package size={16} className="text-emerald-600" />
+          <RotateCcw size={16} className="text-amber-500" />
           <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
             My Borrowed Items
           </h2>
           {borrowedItems.length > 0 && (
-            <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+            <span className="ml-auto text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-semibold">
               {borrowedItems.length}
             </span>
           )}
@@ -353,8 +495,8 @@ export default function ProfileScreen({
                   data-ocid={`profile.borrowed.item.${index + 1}`}
                   className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3 card-hover"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
-                    <Package size={16} className="text-emerald-600" />
+                  <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+                    <Package size={16} className="text-amber-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">
@@ -393,37 +535,41 @@ export default function ProfileScreen({
           Points Breakdown
         </h2>
         <div className="grid grid-cols-3 gap-2">
-          {[
-            {
-              icon: Package,
-              label: "Items Borrowed",
-              pts: "+10 pts",
-              color: "text-emerald-600",
-              bg: "bg-emerald-50",
-            },
-            {
-              icon: Utensils,
-              label: "Food Rescued",
-              pts: "+15 pts",
-              color: "text-amber-600",
-              bg: "bg-amber-50",
-            },
-            {
-              icon: BookOpen,
-              label: "Rooms Booked",
-              pts: "+5 pts",
-              color: "text-blue-600",
-              bg: "bg-blue-50",
-            },
-          ].map(({ icon: Icon, label, pts, color, bg }) => (
-            <div key={label} className={`${bg} rounded-xl p-3 text-center`}>
-              <Icon size={18} className={`${color} mx-auto mb-1.5`} />
-              <p className={`text-sm font-bold ${color} font-display`}>{pts}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-                {label}
-              </p>
-            </div>
-          ))}
+          {/* Lending */}
+          <div className="bg-emerald-50 rounded-xl p-3 text-center">
+            <Leaf size={18} className="text-emerald-600 mx-auto mb-1.5" />
+            <p className="text-sm font-bold text-emerald-600 font-display">
+              +15 pts
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+              For Lending
+            </p>
+          </div>
+
+          {/* Borrowing */}
+          <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <Package size={18} className="text-gray-400 mx-auto mb-1.5" />
+            <p className="text-sm font-bold text-gray-400 font-display">
+              +0 pts
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+              For Borrowing
+            </p>
+          </div>
+
+          {/* Helping */}
+          <div className="bg-emerald-50 rounded-xl p-3 text-center">
+            <HandHelping
+              size={18}
+              className="text-emerald-600 mx-auto mb-1.5"
+            />
+            <p className="text-sm font-bold text-emerald-600 font-display">
+              +15 pts
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+              For Helping
+            </p>
+          </div>
         </div>
       </div>
 
@@ -437,10 +583,12 @@ export default function ProfileScreen({
         </div>
 
         <div className="space-y-2">
-          {leaderboard.map((user, index) => {
-            const medal = MEDAL_CONFIGS[index];
-            const avatarColor = AVATAR_COLORS[index];
-            const isCurrentUser = user.name === "Priya Mehta";
+          {leaderboardEntries.map((user, index) => {
+            const medal = MEDAL_CONFIGS[index] ?? MEDAL_CONFIGS[2];
+            const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
+            const isCurrentUser = userProfile
+              ? user.name === userProfile.name
+              : user.name === "Priya Mehta";
 
             return (
               <div
@@ -508,7 +656,7 @@ export default function ProfileScreen({
         </h2>
         <div className="flex gap-2 flex-wrap">
           {[
-            { emoji: "🌱", label: "First Borrow", earned: true },
+            { emoji: "🌱", label: "First Lend", earned: true },
             { emoji: "🍱", label: "Food Rescuer", earned: true },
             { emoji: "📚", label: "Study Buddy", earned: true },
             { emoji: "⚡", label: "Power Saver", earned: false },
@@ -531,8 +679,55 @@ export default function ProfileScreen({
         </div>
       </div>
 
+      {/* Reset Demo Button */}
+      {onResetDemo && (
+        <div className="px-5 mt-8">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                data-ocid="profile.reset_demo_button"
+                className="w-full flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground border border-border rounded-xl py-2.5 px-4 hover:bg-muted/50 transition-colors"
+              >
+                <RefreshCw size={13} />
+                Reset Demo
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent
+              data-ocid="profile.reset_demo.dialog"
+              className="max-w-sm mx-auto"
+            >
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-display">
+                  Reset all demo data?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will restore all items to their original state. Your
+                  login will remain active.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel
+                  data-ocid="profile.reset_demo.cancel_button"
+                  className="rounded-xl"
+                >
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  data-ocid="profile.reset_demo.confirm_button"
+                  onClick={onResetDemo}
+                  className="rounded-xl bg-destructive text-white hover:bg-destructive/90"
+                >
+                  Reset
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+
       {/* Footer Attribution */}
-      <div className="px-5 mt-8 pb-2 text-center">
+      <div className="px-5 mt-6 pb-2 text-center">
         <p className="text-xs text-muted-foreground">
           © {new Date().getFullYear()}. Built with ❤️ using{" "}
           <a

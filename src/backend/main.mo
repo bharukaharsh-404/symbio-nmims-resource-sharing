@@ -10,6 +10,8 @@ import Runtime "mo:core/Runtime";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
+
+
 actor {
   // Access Control
   let accessControlState = AccessControl.initState();
@@ -57,6 +59,21 @@ actor {
     };
   };
 
+  type RequestItem = {
+    id : Nat;
+    title : Text;
+    category : Text;
+    deadline : Text;
+    postedBy : Text;
+    fulfilled : Bool;
+  };
+
+  module RequestItem {
+    public func compare(a : RequestItem, b : RequestItem) : Order.Order {
+      Nat.compare(a.id, b.id);
+    };
+  };
+
   type UserProfile = {
     id : Principal;
     name : Text;
@@ -74,6 +91,7 @@ actor {
   let borrowItems = Map.empty<Nat, BorrowItem>();
   let foodAlerts = Map.empty<Nat, FoodAlert>();
   let studyRooms = Map.empty<Nat, StudyRoom>();
+  let requestItems = Map.empty<Nat, RequestItem>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   var initialized = false;
 
@@ -101,37 +119,37 @@ actor {
         id = 3;
         name = "Laptop Charger";
         category = "Electronics";
-        status = "Available";
+        status = "Borrowed";
         ownerName = "Campus Resources";
       },
       { id = 4; name = "Lab Coat"; category = "Apparel"; status = "Available"; ownerName = "Campus Resources" },
-      { id = 5; name = "Geometry Set"; category = "Stationery"; status = "Available"; ownerName = "Campus Resources" },
+      { id = 5; name = "HDMI Cable"; category = "Electronics"; status = "Available"; ownerName = "Campus Resources" },
       {
         id = 6;
-        name = "Portable Fan";
+        name = "Portable Speaker";
         category = "Electronics";
-        status = "Available";
+        status = "Borrowed";
         ownerName = "Campus Resources";
       },
       {
         id = 7;
-        name = "Thermos Flask";
-        category = "Personal";
+        name = "Extension Cord";
+        category = "Electronics";
         status = "Available";
         ownerName = "Campus Resources";
       },
       {
         id = 8;
-        name = "Bluetooth Speaker";
-        category = "Electronics";
+        name = "Whiteboard Marker Set";
+        category = "Stationery";
         status = "Available";
         ownerName = "Campus Resources";
       },
-      { id = 9; name = "Backpack"; category = "Apparel"; status = "Available"; ownerName = "Campus Resources" },
+      { id = 9; name = "Badminton Racket"; category = "Sports"; status = "Available"; ownerName = "Campus Resources" },
       {
         id = 10;
-        name = "Lab Manual";
-        category = "Books";
+        name = "Power Bank";
+        category = "Electronics";
         status = "Available";
         ownerName = "Campus Resources";
       },
@@ -145,36 +163,36 @@ actor {
       {
         id = 1;
         source = "Cafeteria Block A";
-        quantity = 5;
-        timeLeft = "30 mins";
+        quantity = 12;
+        timeLeft = "45 mins";
         claimed = false;
       },
       {
         id = 2;
         source = "Faculty Lounge";
-        quantity = 3;
-        timeLeft = "45 mins";
-        claimed = false;
-      },
-      {
-        id = 3;
-        source = "Hostel Kitchen";
-        quantity = 10;
+        quantity = 6;
         timeLeft = "20 mins";
         claimed = false;
       },
       {
-        id = 4;
-        source = "Student Union Office";
+        id = 3;
+        source = "MBA Canteen";
         quantity = 8;
+        timeLeft = "1 hour";
+        claimed = false;
+      },
+      {
+        id = 4;
+        source = "Engineering Block Pantry";
+        quantity = 4;
         timeLeft = "15 mins";
         claimed = false;
       },
       {
         id = 5;
-        source = "Library Cafe";
-        quantity = 6;
-        timeLeft = "40 mins";
+        source = "Guest House Kitchen";
+        quantity = 10;
+        timeLeft = "2 hours";
         claimed = false;
       },
     ];
@@ -187,41 +205,72 @@ actor {
       {
         id = 1;
         roomNo = "Library Room 3";
-        location = "West Wing";
-        capacity = 6;
+        location = "NMIMS Main Library";
+        capacity = 8;
         status = "Available";
       },
       {
         id = 2;
         roomNo = "Innovation Lab";
-        location = "Block B";
-        capacity = 8;
+        location = "Entrepreneurship Block";
+        capacity = 12;
         status = "Available";
       },
       {
         id = 3;
         roomNo = "Seminar Hall B";
-        location = "Main Building";
-        capacity = 20;
-        status = "Available";
+        location = "Academic Block 2";
+        capacity = 30;
+        status = "Busy";
       },
       {
         id = 4;
-        roomNo = "Group Study Room";
-        location = "Library";
+        roomNo = "Discussion Pod 1";
+        location = "Student Center";
         capacity = 4;
         status = "Available";
       },
       {
         id = 5;
-        roomNo = "Conference Room";
-        location = "Admin Block";
-        capacity = 15;
-        status = "Available";
+        roomNo = "Computer Lab 5";
+        location = "Technology Block";
+        capacity = 20;
+        status = "Busy";
       },
     ];
     for (room in initialStudyRooms.values()) {
       studyRooms.add(room.id, room);
+    };
+
+    // Seed Request Items
+    let initialRequestItems = [
+      {
+        id = 1;
+        title = "Need Calculator for Exam";
+        category = "Study Tools";
+        deadline = "Today";
+        postedBy = "Aditya Kumar";
+        fulfilled = false;
+      },
+      {
+        id = 2;
+        title = "Need Projector for Presentation";
+        category = "Electronics";
+        deadline = "Tomorrow";
+        postedBy = "Sneha Rao";
+        fulfilled = false;
+      },
+      {
+        id = 3;
+        title = "Need Notes for Math 101";
+        category = "Notes";
+        deadline = "This Week";
+        postedBy = "Rohan Verma";
+        fulfilled = false;
+      },
+    ];
+    for (request in initialRequestItems.values()) {
+      requestItems.add(request.id, request);
     };
 
     // Seed Leaderboard Students
@@ -274,6 +323,11 @@ actor {
     studyRooms.values().toArray();
   };
 
+  public query ({ caller }) func getAllRequests() : async [RequestItem] {
+    ensureInitialized();
+    requestItems.values().toArray();
+  };
+
   public shared ({ caller }) func claimBorrowItem(itemId : Nat) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can claim borrow items");
@@ -282,14 +336,31 @@ actor {
     switch (borrowItems.get(itemId)) {
       case (null) { Runtime.trap("Item not found") };
       case (?item) {
-        if (Text.equal(item.status, "Borrowed")) {
-          Runtime.trap("Item already borrowed");
-        };
         let updatedItem : BorrowItem = {
           id = item.id;
           name = item.name;
           category = item.category;
           status = "Borrowed";
+          ownerName = item.ownerName;
+        };
+        borrowItems.add(itemId, updatedItem);
+      };
+    };
+  };
+
+  public shared ({ caller }) func returnBorrowItem(itemId : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can return borrow items");
+    };
+    ensureInitialized();
+    switch (borrowItems.get(itemId)) {
+      case (null) { Runtime.trap("Item not found") };
+      case (?item) {
+        let updatedItem : BorrowItem = {
+          id = item.id;
+          name = item.name;
+          category = item.category;
+          status = "Available";
           ownerName = item.ownerName;
         };
         borrowItems.add(itemId, updatedItem);
@@ -305,9 +376,6 @@ actor {
     switch (foodAlerts.get(alertId)) {
       case (null) { Runtime.trap("Food alert not found") };
       case (?alert) {
-        if (alert.claimed) {
-          Runtime.trap("Food already claimed");
-        };
         let updatedAlert : FoodAlert = {
           id = alert.id;
           source = alert.source;
@@ -328,9 +396,6 @@ actor {
     switch (studyRooms.get(roomId)) {
       case (null) { Runtime.trap("Study room not found") };
       case (?room) {
-        if (Text.equal(room.status, "Busy")) {
-          Runtime.trap("Study room already booked");
-        };
         let updatedRoom : StudyRoom = {
           id = room.id;
           roomNo = room.roomNo;
@@ -343,10 +408,65 @@ actor {
     };
   };
 
-  public query ({ caller }) func getCallerUserProfile() : async UserProfile {
+  public shared ({ caller }) func releaseStudyRoom(roomId : Nat) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
+      Runtime.trap("Unauthorized: Only users can release study rooms");
     };
+    ensureInitialized();
+    switch (studyRooms.get(roomId)) {
+      case (null) { Runtime.trap("Study room not found") };
+      case (?room) {
+        let updatedRoom : StudyRoom = {
+          id = room.id;
+          roomNo = room.roomNo;
+          location = room.location;
+          capacity = room.capacity;
+          status = "Available";
+        };
+        studyRooms.add(roomId, updatedRoom);
+      };
+    };
+  };
+
+  public shared ({ caller }) func fulfillRequest(requestId : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can fulfill requests");
+    };
+    ensureInitialized();
+    switch (requestItems.get(requestId)) {
+      case (null) { Runtime.trap("Request not found") };
+      case (?request) {
+        let updatedRequest : RequestItem = {
+          id = request.id;
+          title = request.title;
+          category = request.category;
+          deadline = request.deadline;
+          postedBy = request.postedBy;
+          fulfilled = true;
+        };
+        requestItems.add(requestId, updatedRequest);
+      };
+    };
+  };
+
+  public shared ({ caller }) func addRequest(title : Text, category : Text, deadline : Text, postedBy : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can add requests");
+    };
+    ensureInitialized();
+    let newId = requestItems.size() + 1;
+    let newRequest : RequestItem = {
+      id = newId;
+      title;
+      category;
+      deadline;
+      postedBy;
+      fulfilled = false;
+    };
+    requestItems.add(newId, newRequest);
+  };
+
+  public query ({ caller }) func getCallerUserProfile() : async UserProfile {
     ensureInitialized();
     switch (userProfiles.get(caller)) {
       case (?profile) { profile };
@@ -403,24 +523,19 @@ actor {
     userProfiles.values().toArray().sort();
   };
 
-  public shared ({ caller }) func awardGreenPoints(userId : Principal, points : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can award green points");
-    };
+  public shared ({ caller }) func awardGreenPoints(points : Nat) : async () {
     ensureInitialized();
-    let callerRole = AccessControl.getUserRole(accessControlState, caller);
-    let userRole = AccessControl.getUserRole(accessControlState, userId);
-
-    if (caller != userId and callerRole != #admin) {
-      if (userRole == #admin) {
-        Runtime.trap("Cannot modify admin user points");
-      } else {
-        Runtime.trap("Cannot modify other profiles. Strictly one user one profile.");
+    switch (userProfiles.get(caller)) {
+      case (null) {
+        let newProfile : UserProfile = {
+          id = caller;
+          name = "New User";
+          department = "Unknown";
+          greenPoints = points;
+          avatarInitials = "NU";
+        };
+        userProfiles.add(caller, newProfile);
       };
-    };
-
-    switch (userProfiles.get(userId)) {
-      case (null) { Runtime.trap("User profile not found") };
       case (?profile) {
         let updatedProfile : UserProfile = {
           id = profile.id;
@@ -429,7 +544,7 @@ actor {
           greenPoints = profile.greenPoints + points;
           avatarInitials = profile.avatarInitials;
         };
-        userProfiles.add(userId, updatedProfile);
+        userProfiles.add(caller, updatedProfile);
       };
     };
   };

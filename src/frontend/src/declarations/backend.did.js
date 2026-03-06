@@ -27,6 +27,14 @@ export const FoodAlert = IDL.Record({
   'quantity' : IDL.Nat,
   'timeLeft' : IDL.Text,
 });
+export const RequestItem = IDL.Record({
+  'id' : IDL.Nat,
+  'title' : IDL.Text,
+  'postedBy' : IDL.Text,
+  'fulfilled' : IDL.Bool,
+  'deadline' : IDL.Text,
+  'category' : IDL.Text,
+});
 export const StudyRoom = IDL.Record({
   'id' : IDL.Nat,
   'status' : IDL.Text,
@@ -44,13 +52,16 @@ export const UserProfile = IDL.Record({
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addRequest' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'awardGreenPoints' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
+  'awardGreenPoints' : IDL.Func([IDL.Nat], [], []),
   'bookStudyRoom' : IDL.Func([IDL.Nat], [], []),
   'claimBorrowItem' : IDL.Func([IDL.Nat], [], []),
   'claimFoodAlert' : IDL.Func([IDL.Nat], [], []),
+  'fulfillRequest' : IDL.Func([IDL.Nat], [], []),
   'getAllBorrowItems' : IDL.Func([], [IDL.Vec(BorrowItem)], ['query']),
   'getAllFoodAlerts' : IDL.Func([], [IDL.Vec(FoodAlert)], ['query']),
+  'getAllRequests' : IDL.Func([], [IDL.Vec(RequestItem)], ['query']),
   'getAllStudyRooms' : IDL.Func([], [IDL.Vec(StudyRoom)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [UserProfile], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
@@ -61,6 +72,8 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'releaseStudyRoom' : IDL.Func([IDL.Nat], [], []),
+  'returnBorrowItem' : IDL.Func([IDL.Nat], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'updateCallerUserProfile' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
 });
@@ -87,6 +100,14 @@ export const idlFactory = ({ IDL }) => {
     'quantity' : IDL.Nat,
     'timeLeft' : IDL.Text,
   });
+  const RequestItem = IDL.Record({
+    'id' : IDL.Nat,
+    'title' : IDL.Text,
+    'postedBy' : IDL.Text,
+    'fulfilled' : IDL.Bool,
+    'deadline' : IDL.Text,
+    'category' : IDL.Text,
+  });
   const StudyRoom = IDL.Record({
     'id' : IDL.Nat,
     'status' : IDL.Text,
@@ -104,13 +125,16 @@ export const idlFactory = ({ IDL }) => {
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addRequest' : IDL.Func([IDL.Text, IDL.Text, IDL.Text, IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'awardGreenPoints' : IDL.Func([IDL.Principal, IDL.Nat], [], []),
+    'awardGreenPoints' : IDL.Func([IDL.Nat], [], []),
     'bookStudyRoom' : IDL.Func([IDL.Nat], [], []),
     'claimBorrowItem' : IDL.Func([IDL.Nat], [], []),
     'claimFoodAlert' : IDL.Func([IDL.Nat], [], []),
+    'fulfillRequest' : IDL.Func([IDL.Nat], [], []),
     'getAllBorrowItems' : IDL.Func([], [IDL.Vec(BorrowItem)], ['query']),
     'getAllFoodAlerts' : IDL.Func([], [IDL.Vec(FoodAlert)], ['query']),
+    'getAllRequests' : IDL.Func([], [IDL.Vec(RequestItem)], ['query']),
     'getAllStudyRooms' : IDL.Func([], [IDL.Vec(StudyRoom)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [UserProfile], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
@@ -121,6 +145,8 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'releaseStudyRoom' : IDL.Func([IDL.Nat], [], []),
+    'returnBorrowItem' : IDL.Func([IDL.Nat], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'updateCallerUserProfile' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text],

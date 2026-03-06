@@ -259,3 +259,39 @@
 .green-progress [role="progressbar"] > div {
   background: oklch(var(--primary));
 }
+
+/* Campus feed slide-in animation for new items */
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.feed-item-slide {
+  animation: slideInFromLeft 0.3s ease-out;
+}
+
+/* Score pop animation when points change */
+@keyframes scorePop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.12);
+  }
+  60% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.score-pop {
+  animation: scorePop 0.45s ease-out;
+}

@@ -17,46 +17,14 @@ import {
 import { HandHelping, Loader2, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-
-interface RequestItem {
-  id: number;
-  title: string;
-  category: string;
-  deadline: string;
-  postedBy: string;
-  fulfilled: boolean;
-}
+import type { RequestItem, UserProfile } from "../App";
 
 interface RequestsScreenProps {
-  onPointsEarned: (pts: number) => void;
+  requests: RequestItem[];
+  onFulfillRequest: (id: bigint) => void;
+  onAddRequest: (req: RequestItem) => void;
+  userProfile: UserProfile | null;
 }
-
-const MOCK_REQUESTS: RequestItem[] = [
-  {
-    id: 1,
-    title: "Need Calculator for Exam",
-    category: "Study Tools",
-    deadline: "Today",
-    postedBy: "Aditya Kumar",
-    fulfilled: false,
-  },
-  {
-    id: 2,
-    title: "Need Projector for Presentation",
-    category: "Electronics",
-    deadline: "Tomorrow",
-    postedBy: "Sneha Rao",
-    fulfilled: false,
-  },
-  {
-    id: 3,
-    title: "Need Notes for Math 101",
-    category: "Notes",
-    deadline: "This Week",
-    postedBy: "Rohan Verma",
-    fulfilled: false,
-  },
-];
 
 const CATEGORY_COLORS: Record<string, string> = {
   "Study Tools": "bg-violet-50 text-violet-700 border-violet-100",
@@ -77,14 +45,16 @@ const CATEGORIES = ["Study Tools", "Electronics", "Food", "Notes", "Other"];
 const DEADLINES = ["Today", "Tomorrow", "This Week", "This Month"];
 
 export default function RequestsScreen({
-  onPointsEarned,
+  requests,
+  onFulfillRequest,
+  onAddRequest,
+  userProfile,
 }: RequestsScreenProps) {
-  const [requests, setRequests] = useState<RequestItem[]>(MOCK_REQUESTS);
   const [showForm, setShowForm] = useState(false);
   const [formTitle, setFormTitle] = useState("");
   const [formCategory, setFormCategory] = useState("");
   const [formDeadline, setFormDeadline] = useState("");
-  const [helping, setHelping] = useState<number | null>(null);
+  const [helping, setHelping] = useState<bigint | null>(null);
 
   const activeCount = requests.filter((r) => !r.fulfilled).length;
 
@@ -94,14 +64,14 @@ export default function RequestsScreen({
       return;
     }
     const newRequest: RequestItem = {
-      id: Date.now(),
+      id: BigInt(Date.now()),
       title: formTitle.trim(),
       category: formCategory,
       deadline: formDeadline,
-      postedBy: "Demo User",
+      postedBy: userProfile?.name ?? "Demo User",
       fulfilled: false,
     };
-    setRequests((prev) => [newRequest, ...prev]);
+    onAddRequest(newRequest);
     setFormTitle("");
     setFormCategory("");
     setFormDeadline("");
@@ -113,10 +83,7 @@ export default function RequestsScreen({
     if (req.fulfilled) return;
     setHelping(req.id);
     await new Promise((resolve) => setTimeout(resolve, 500));
-    setRequests((prev) =>
-      prev.map((r) => (r.id === req.id ? { ...r, fulfilled: true } : r)),
-    );
-    onPointsEarned(15);
+    onFulfillRequest(req.id);
     setHelping(null);
     toast.success("Request fulfilled! +15 Green Points 🌱");
   };
@@ -174,7 +141,7 @@ export default function RequestsScreen({
 
               return (
                 <div
-                  key={req.id}
+                  key={req.id.toString()}
                   data-ocid={`requests.item.${index + 1}`}
                   className="bg-card rounded-2xl border border-border p-4 card-hover"
                 >

@@ -117,6 +117,14 @@ export interface UserProfile {
     greenPoints: bigint;
     department: string;
 }
+export interface RequestItem {
+    id: bigint;
+    title: string;
+    postedBy: string;
+    fulfilled: boolean;
+    deadline: string;
+    category: string;
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -124,19 +132,24 @@ export enum UserRole {
 }
 export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
+    addRequest(title: string, category: string, deadline: string, postedBy: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    awardGreenPoints(userId: Principal, points: bigint): Promise<void>;
+    awardGreenPoints(points: bigint): Promise<void>;
     bookStudyRoom(roomId: bigint): Promise<void>;
     claimBorrowItem(itemId: bigint): Promise<void>;
     claimFoodAlert(alertId: bigint): Promise<void>;
+    fulfillRequest(requestId: bigint): Promise<void>;
     getAllBorrowItems(): Promise<Array<BorrowItem>>;
     getAllFoodAlerts(): Promise<Array<FoodAlert>>;
+    getAllRequests(): Promise<Array<RequestItem>>;
     getAllStudyRooms(): Promise<Array<StudyRoom>>;
     getCallerUserProfile(): Promise<UserProfile>;
     getCallerUserRole(): Promise<UserRole>;
     getLeaderboard(): Promise<Array<UserProfile>>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    releaseStudyRoom(roomId: bigint): Promise<void>;
+    returnBorrowItem(itemId: bigint): Promise<void>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     updateCallerUserProfile(name: string, department: string, avatarInitials: string): Promise<void>;
 }
@@ -157,6 +170,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async addRequest(arg0: string, arg1: string, arg2: string, arg3: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addRequest(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addRequest(arg0, arg1, arg2, arg3);
+            return result;
+        }
+    }
     async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
         if (this.processError) {
             try {
@@ -171,17 +198,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async awardGreenPoints(arg0: Principal, arg1: bigint): Promise<void> {
+    async awardGreenPoints(arg0: bigint): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.awardGreenPoints(arg0, arg1);
+                const result = await this.actor.awardGreenPoints(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.awardGreenPoints(arg0, arg1);
+            const result = await this.actor.awardGreenPoints(arg0);
             return result;
         }
     }
@@ -227,6 +254,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async fulfillRequest(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.fulfillRequest(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.fulfillRequest(arg0);
+            return result;
+        }
+    }
     async getAllBorrowItems(): Promise<Array<BorrowItem>> {
         if (this.processError) {
             try {
@@ -252,6 +293,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getAllFoodAlerts();
+            return result;
+        }
+    }
+    async getAllRequests(): Promise<Array<RequestItem>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllRequests();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllRequests();
             return result;
         }
     }
@@ -336,6 +391,34 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async releaseStudyRoom(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.releaseStudyRoom(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.releaseStudyRoom(arg0);
+            return result;
+        }
+    }
+    async returnBorrowItem(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.returnBorrowItem(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.returnBorrowItem(arg0);
             return result;
         }
     }

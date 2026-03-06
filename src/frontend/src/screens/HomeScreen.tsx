@@ -1,21 +1,56 @@
-import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Bell,
   BookOpen,
   Box,
   Leaf,
+  Loader2,
   Package,
+  Plus,
   TrendingUp,
   Utensils,
 } from "lucide-react";
-import type { Tab } from "../App";
+import { useState } from "react";
+import { toast } from "sonner";
+import type { ActivityEvent, InventoryItem, Tab, UserProfile } from "../App";
 
 interface HomeScreenProps {
   greenPoints: number;
   onNavigate: (tab: Tab) => void;
   itemsBorrowedCount: number;
   foodClaimedCount: number;
+  userProfile?: UserProfile | null;
+  onAddInventoryItem: (item: InventoryItem) => void;
+  nextInventoryId: bigint;
+  activityFeed?: ActivityEvent[];
+  localName?: string;
 }
+
+const ITEM_CATEGORIES = [
+  "Electronics",
+  "Books",
+  "Stationery",
+  "Sports",
+  "Lab Equipment",
+  "Accessories",
+  "Utilities",
+  "Other",
+];
 
 const QUICK_CARDS = [
   {
@@ -60,6 +95,30 @@ const QUICK_CARDS = [
   },
 ];
 
+const DEFAULT_FEED: ActivityEvent[] = [
+  {
+    id: "1",
+    icon: "📦",
+    text: "You listed a Mechanical Keyboard",
+    time: "1h ago",
+    color: "text-emerald-600",
+  },
+  {
+    id: "2",
+    icon: "🍱",
+    text: "Food claimed from MBA Canteen",
+    time: "3h ago",
+    color: "text-amber-600",
+  },
+  {
+    id: "3",
+    icon: "📚",
+    text: "Library Room 3 booked",
+    time: "Yesterday",
+    color: "text-blue-600",
+  },
+];
+
 function getLevel(points: number): {
   level: number;
   name: string;
@@ -77,12 +136,52 @@ export default function HomeScreen({
   onNavigate,
   itemsBorrowedCount,
   foodClaimedCount,
+  userProfile,
+  onAddInventoryItem,
+  nextInventoryId,
+  activityFeed,
+  localName,
 }: HomeScreenProps) {
   const levelInfo = getLevel(greenPoints);
   const progressPct = Math.min(
     100,
     Math.round((greenPoints / levelInfo.next) * 100),
   );
+
+  const [showListDialog, setShowListDialog] = useState(false);
+  const [itemName, setItemName] = useState("");
+  const [itemCategory, setItemCategory] = useState("");
+  const [itemDescription, setItemDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const displayName = userProfile?.name || localName;
+
+  const handleListItem = async () => {
+    if (!itemName.trim() || !itemCategory) {
+      toast.error("Please fill in item name and category.");
+      return;
+    }
+    setIsSubmitting(true);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    const newItem: InventoryItem = {
+      id: nextInventoryId,
+      name: itemName.trim(),
+      category: itemCategory,
+      description: itemDescription.trim(),
+      status: "Available",
+    };
+    onAddInventoryItem(newItem);
+    setItemName("");
+    setItemCategory("");
+    setItemDescription("");
+    setIsSubmitting(false);
+    setShowListDialog(false);
+    toast.success("Item listed! Others can now borrow it. 📦");
+  };
+
+  const feedItems =
+    activityFeed && activityFeed.length > 0 ? activityFeed : DEFAULT_FEED;
 
   return (
     <div className="min-h-screen pb-4">
@@ -93,7 +192,9 @@ export default function HomeScreen({
             NMIMS Vile Parle Campus
           </p>
           <h1 className="text-2xl font-bold text-foreground font-display">
-            Good morning, Priya! 👋
+            {displayName
+              ? `Good morning, ${displayName.split(" ")[0]}! 👋`
+              : "Good morning! 👋"}
           </h1>
         </div>
         <button
@@ -127,7 +228,10 @@ export default function HomeScreen({
             </div>
 
             <div className="flex items-end gap-2 mb-1">
-              <span className="text-5xl font-bold text-white font-display leading-none">
+              <span
+                key={greenPoints}
+                className="text-5xl font-bold text-white font-display leading-none score-pop"
+              >
                 {greenPoints}
               </span>
               <span className="text-white/70 text-base pb-1">pts</span>
@@ -190,7 +294,7 @@ export default function HomeScreen({
                   {itemsBorrowedCount}
                 </span>
                 <span className="text-white/70 text-xs sm:mt-1">
-                  Items Shared
+                  Items Lended
                 </span>
               </div>
             </div>
@@ -278,36 +382,20 @@ export default function HomeScreen({
         </div>
       </div>
 
-      {/* Today's Activity */}
+      {/* Campus Activity Feed */}
       <div className="px-5 mt-5">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-          Today's Activity
+          Campus Activity
         </h2>
         <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
-          {[
-            {
-              icon: "📦",
-              text: "You borrowed a Laptop Charger",
-              time: "2h ago",
-              color: "text-emerald-600",
-            },
-            {
-              icon: "🍱",
-              text: "Food claimed from MBA Canteen",
-              time: "5h ago",
-              color: "text-amber-600",
-            },
-            {
-              icon: "📚",
-              text: "Library Room 3 booked",
-              time: "Yesterday",
-              color: "text-blue-600",
-            },
-          ].map((item) => (
-            <div key={item.text} className="flex items-start gap-3">
+          {feedItems.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-start gap-3 feed-item-slide"
+            >
               <span className="text-xl mt-0.5">{item.icon}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-foreground font-medium truncate">
+                <p className={`text-sm font-medium truncate ${item.color}`}>
                   {item.text}
                 </p>
                 <p className="text-xs text-muted-foreground">{item.time}</p>
@@ -326,12 +414,124 @@ export default function HomeScreen({
               Eco Tip of the Day
             </p>
             <p className="text-xs text-emerald-700 mt-0.5">
-              Sharing one item saves ~2.3 kg of CO₂ equivalent. Your borrowing
-              habit matters!
+              Sharing one item saves ~2.3 kg of CO₂ equivalent. Lend to earn
+              Green Points and make a difference!
             </p>
           </div>
         </div>
       </div>
+
+      {/* FAB — List an Item */}
+      <button
+        type="button"
+        data-ocid="home.list_item_button"
+        onClick={() => setShowListDialog(true)}
+        className="fixed bottom-20 right-4 z-40 w-12 h-12 rounded-full green-gradient text-white shadow-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all duration-150"
+        aria-label="List an item for sharing"
+      >
+        <Plus size={22} />
+      </button>
+
+      {/* List Item Dialog */}
+      <Dialog open={showListDialog} onOpenChange={setShowListDialog}>
+        <DialogContent
+          data-ocid="home.list_item.dialog"
+          className="max-w-sm mx-auto"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 font-display">
+              <Package size={18} className="text-emerald-600" />
+              List an Item
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-1">
+            <div className="space-y-1.5">
+              <Label htmlFor="item-name" className="text-sm font-medium">
+                Item Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="item-name"
+                data-ocid="home.list_item.name.input"
+                placeholder="e.g. Scientific Calculator"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                className="rounded-xl"
+                autoFocus
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">
+                Category <span className="text-destructive">*</span>
+              </Label>
+              <Select value={itemCategory} onValueChange={setItemCategory}>
+                <SelectTrigger
+                  data-ocid="home.list_item.category.select"
+                  className="rounded-xl"
+                >
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ITEM_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="item-desc" className="text-sm font-medium">
+                Description{" "}
+                <span className="text-muted-foreground text-[11px] font-normal">
+                  (optional)
+                </span>
+              </Label>
+              <Textarea
+                id="item-desc"
+                placeholder="Brief description of the item…"
+                value={itemDescription}
+                onChange={(e) => setItemDescription(e.target.value)}
+                className="rounded-xl text-sm resize-none min-h-[80px]"
+              />
+            </div>
+
+            {/* Info hint */}
+            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
+              <Leaf size={13} className="text-emerald-600 shrink-0" />
+              <p className="text-[11px] text-emerald-700 font-medium">
+                You earn <span className="font-bold">+15 Green Points</span>{" "}
+                each time someone borrows your item!
+              </p>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                data-ocid="home.list_item.cancel_button"
+                onClick={() => setShowListDialog(false)}
+                className="flex-1 rounded-xl border border-border py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                data-ocid="home.list_item.submit_button"
+                onClick={handleListItem}
+                disabled={!itemName.trim() || !itemCategory || isSubmitting}
+                className="flex-1 rounded-xl green-gradient text-white text-sm font-semibold py-2 hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-1.5"
+              >
+                {isSubmitting ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : null}
+                {isSubmitting ? "Listing…" : "List Item"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
