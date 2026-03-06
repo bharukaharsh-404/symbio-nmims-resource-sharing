@@ -74,6 +74,26 @@ export default function LoginScreen({
           }}
         />
 
+        {/* Floating decorative leaves */}
+        <div
+          className="absolute top-20 left-8 text-2xl pointer-events-none select-none leaf-float-1"
+          aria-hidden="true"
+        >
+          🌿
+        </div>
+        <div
+          className="absolute top-32 right-10 text-xl pointer-events-none select-none leaf-float-2"
+          aria-hidden="true"
+        >
+          🍃
+        </div>
+        <div
+          className="absolute top-52 left-16 text-lg pointer-events-none select-none leaf-float-3"
+          aria-hidden="true"
+        >
+          🌱
+        </div>
+
         {/* Logo area */}
         <div className="relative z-10 flex flex-col items-center mb-10">
           <div className="score-card-gradient grain-overlay w-20 h-20 rounded-3xl flex items-center justify-center shadow-2xl mb-5">

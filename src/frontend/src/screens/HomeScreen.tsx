@@ -39,6 +39,8 @@ interface HomeScreenProps {
   nextInventoryId: bigint;
   activityFeed?: ActivityEvent[];
   localName?: string;
+  onOpenNotifications?: () => void;
+  notificationsCount?: number;
 }
 
 const ITEM_CATEGORIES = [
@@ -141,6 +143,8 @@ export default function HomeScreen({
   nextInventoryId,
   activityFeed,
   localName,
+  onOpenNotifications,
+  notificationsCount = 0,
 }: HomeScreenProps) {
   const levelInfo = getLevel(greenPoints);
   const progressPct = Math.min(
@@ -184,13 +188,18 @@ export default function HomeScreen({
     activityFeed && activityFeed.length > 0 ? activityFeed : DEFAULT_FEED;
 
   return (
-    <div className="min-h-screen pb-4">
+    <div className="min-h-screen pb-4 tab-fade-in">
       {/* Top Header */}
       <div className="px-5 pt-12 pb-2 flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-0.5">
-            NMIMS Vile Parle Campus
-          </p>
+          <div className="flex items-center gap-2 mb-0.5">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+              NMIMS Vile Parle Campus
+            </p>
+            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full tracking-wide uppercase">
+              Symbio
+            </span>
+          </div>
           <h1 className="text-2xl font-bold text-foreground font-display">
             {displayName
               ? `Good morning, ${displayName.split(" ")[0]}! 👋`
@@ -199,9 +208,15 @@ export default function HomeScreen({
         </div>
         <button
           type="button"
-          className="mt-1 w-9 h-9 rounded-full bg-accent flex items-center justify-center"
+          data-ocid="home.notifications.button"
+          onClick={onOpenNotifications}
+          className="mt-1 relative w-9 h-9 rounded-full bg-accent flex items-center justify-center hover:bg-emerald-100 transition-colors"
+          aria-label="Open notifications"
         >
           <Bell size={18} className="text-foreground/70" />
+          {notificationsCount > 0 && (
+            <span data-ocid="home.notifications.badge" className="notif-dot" />
+          )}
         </button>
       </div>
 

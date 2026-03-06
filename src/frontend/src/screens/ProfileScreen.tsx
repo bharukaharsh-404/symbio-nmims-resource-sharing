@@ -14,10 +14,13 @@ import {
   HandHelping,
   Leaf,
   Loader2,
+  Lock,
   LogOut,
   Package,
   RefreshCw,
   RotateCcw,
+  Shield,
+  TrendingUp,
   Trophy,
   Utensils,
 } from "lucide-react";
@@ -37,8 +40,11 @@ interface ProfileScreenProps {
   leaderboard: UserProfile[];
   onLogout: () => void;
   onResetDemo?: () => void;
+  onOpenAdmin?: () => void;
   localName?: string;
   localDept?: string;
+  requestsFulfilled?: number;
+  studyRoomsBooked?: number;
 }
 
 const MOCK_LEADERBOARD_FALLBACK = [
@@ -117,8 +123,11 @@ export default function ProfileScreen({
   leaderboard,
   onLogout,
   onResetDemo,
+  onOpenAdmin,
   localName,
   localDept,
+  requestsFulfilled = 0,
+  studyRoomsBooked = 0,
 }: ProfileScreenProps) {
   const profileName = userProfile?.name || localName || "You";
   const profileDept = userProfile?.department || localDept || "NMIMS Student";
@@ -649,39 +658,211 @@ export default function ProfileScreen({
         </div>
       </div>
 
-      {/* Achievement Badges */}
+      {/* Analytics — Weekly Impact */}
+      <div className="px-5 mt-5">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp size={16} className="text-emerald-600" />
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">
+            Your Week
+          </h2>
+        </div>
+
+        <div className="bg-card border border-border rounded-2xl p-4">
+          {/* Bar chart */}
+          {(() => {
+            const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+            const seedData = [15, 30, 0, 45, 15, 30, greenPoints % 50];
+            const maxVal = Math.max(...seedData, 1);
+            return (
+              <div className="flex items-end gap-1.5 h-20 mb-2">
+                {seedData.map((val, i) => (
+                  <div
+                    key={dayLabels[i]}
+                    className="flex-1 flex flex-col items-center gap-1"
+                  >
+                    <div className="relative w-full flex-1 flex items-end">
+                      <div
+                        className="w-full rounded-t-md bg-emerald-100"
+                        style={{ height: "100%" }}
+                      />
+                      <div
+                        className={`absolute bottom-0 w-full rounded-t-md analytics-bar ${
+                          i === 6 ? "bg-emerald-500" : "bg-emerald-300"
+                        }`}
+                        style={{
+                          height: `${Math.round((val / maxVal) * 100)}%`,
+                          animationDelay: `${i * 80}ms`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+          <div className="flex gap-1.5">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+              <div key={d} className="flex-1 text-center">
+                <span className="text-[9px] text-muted-foreground font-medium">
+                  {d}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            Simulated weekly Green Points activity
+          </p>
+        </div>
+      </div>
+
+      {/* Campus Totals */}
+      <div className="px-5 mt-4">
+        <div
+          data-ocid="profile.campus_totals.card"
+          className="bg-card border border-border rounded-2xl p-4"
+        >
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3">
+            Campus Totals
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-emerald-50 rounded-xl p-3">
+              <p className="text-xs text-emerald-600 font-medium mb-1">
+                Total CO₂ Saved
+              </p>
+              <p className="text-xl font-bold font-display text-emerald-700">
+                {(
+                  2847 +
+                  itemsLendedCount * 0.5 +
+                  foodClaimedCount * 0.3
+                ).toFixed(0)}
+                <span className="text-sm font-normal ml-0.5">kg</span>
+              </p>
+              <p className="text-[10px] text-emerald-600 mt-0.5">campus-wide</p>
+            </div>
+            <div className="bg-blue-50 rounded-xl p-3">
+              <p className="text-xs text-blue-600 font-medium mb-1">
+                Items Shared
+              </p>
+              <p className="text-xl font-bold font-display text-blue-700">
+                {312 +
+                  borrowItems.filter((b) => b.status === "Borrowed").length}
+              </p>
+              <p className="text-[10px] text-blue-600 mt-0.5">
+                You contributed{" "}
+                {Math.max(
+                  0.1,
+                  (itemsLendedCount /
+                    Math.max(
+                      312 +
+                        borrowItems.filter((b) => b.status === "Borrowed")
+                          .length,
+                      1,
+                    )) *
+                    100,
+                ).toFixed(1)}
+                %
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Achievement Badges */}
       <div className="px-5 mt-5">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest mb-3">
           Achievements
         </h2>
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid grid-cols-3 gap-2">
           {[
-            { emoji: "🌱", label: "First Lend", earned: true },
-            { emoji: "🍱", label: "Food Rescuer", earned: true },
-            { emoji: "📚", label: "Study Buddy", earned: true },
-            { emoji: "⚡", label: "Power Saver", earned: false },
-            { emoji: "🌍", label: "Eco Hero", earned: false },
-          ].map(({ emoji, label, earned }) => (
+            {
+              emoji: "🌱",
+              label: "First Lend",
+              earned: itemsLendedCount >= 1,
+              hint: itemsLendedCount >= 1 ? "Earned!" : "Lend 1 item",
+            },
+            {
+              emoji: "🍱",
+              label: "Food Rescuer",
+              earned: foodClaimedCount >= 1,
+              hint: foodClaimedCount >= 1 ? "Earned!" : "Claim 1 food",
+            },
+            {
+              emoji: "📚",
+              label: "Study Buddy",
+              earned: studyRoomsBooked >= 1,
+              hint: studyRoomsBooked >= 1 ? "Earned!" : "Book a room",
+            },
+            {
+              emoji: "⚡",
+              label: "Power Lender",
+              earned: itemsLendedCount >= 3,
+              hint: `${itemsLendedCount}/3 lends`,
+            },
+            {
+              emoji: "🌍",
+              label: "Eco Hero",
+              earned: greenPoints >= 500,
+              hint: `${greenPoints}/500 pts`,
+            },
+            {
+              emoji: "🤝",
+              label: "Request Hero",
+              earned: requestsFulfilled >= 1,
+              hint: requestsFulfilled >= 1 ? "Earned!" : "Fulfill 1 request",
+            },
+          ].map(({ emoji, label, earned, hint }) => (
             <div
               key={label}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium ${
+              className={`flex flex-col items-center gap-1.5 px-2 py-3 rounded-2xl border text-center ${
                 earned
-                  ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                  : "bg-gray-50 border-gray-100 text-gray-400"
+                  ? "bg-emerald-50 border-emerald-100"
+                  : "bg-gray-50 border-gray-100"
               }`}
             >
-              <span className={earned ? "" : "grayscale opacity-50"}>
+              <span
+                className={`text-2xl ${earned ? "" : "grayscale opacity-40"}`}
+              >
                 {emoji}
               </span>
-              {label}
+              <span
+                className={`text-[10px] font-semibold leading-tight ${
+                  earned ? "text-emerald-700" : "text-gray-400"
+                }`}
+              >
+                {label}
+              </span>
+              <span
+                className={`text-[9px] leading-tight ${
+                  earned ? "text-emerald-500" : "text-gray-400"
+                }`}
+              >
+                {earned ? "✓ Earned" : hint}
+              </span>
+              {!earned && <Lock size={10} className="text-gray-300" />}
             </div>
           ))}
         </div>
       </div>
 
+      {/* Faculty Admin Panel Link */}
+      {onOpenAdmin && (
+        <div className="px-5 mt-6">
+          <button
+            type="button"
+            data-ocid="profile.admin_panel.button"
+            onClick={onOpenAdmin}
+            className="w-full flex items-center justify-center gap-2 text-xs font-medium text-muted-foreground border border-border rounded-xl py-2.5 px-4 hover:bg-slate-50 hover:text-foreground transition-colors"
+          >
+            <Shield size={13} className="text-slate-400" />
+            Faculty Admin Panel
+            <Lock size={11} className="text-slate-300 ml-1" />
+          </button>
+        </div>
+      )}
+
       {/* Reset Demo Button */}
       {onResetDemo && (
-        <div className="px-5 mt-8">
+        <div className="px-5 mt-3">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <button

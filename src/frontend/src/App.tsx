@@ -1,9 +1,12 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import type { UserProfile as BackendUserProfile } from "./backend";
 import BottomNav from "./components/BottomNav";
+import NotificationsSheet from "./components/NotificationsSheet";
 import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
+import AdminScreen from "./screens/AdminScreen";
 import BorrowScreen from "./screens/BorrowScreen";
 import FoodScreen from "./screens/FoodScreen";
 import HomeScreen from "./screens/HomeScreen";
@@ -13,7 +16,14 @@ import ProfileScreen from "./screens/ProfileScreen";
 import RequestsScreen from "./screens/RequestsScreen";
 import StudyScreen from "./screens/StudyScreen";
 
-export type Tab = "home" | "borrow" | "food" | "study" | "profile" | "requests";
+export type Tab =
+  | "home"
+  | "borrow"
+  | "food"
+  | "study"
+  | "profile"
+  | "requests"
+  | "admin";
 
 export interface BorrowItem {
   id: bigint;
@@ -282,6 +292,18 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<Tab>("home");
 
+  // ── Admin panel state ────────────────────────────────────────────────────────
+  const [showAdminTab, setShowAdminTab] = useState(false);
+
+  // ── Notifications state ──────────────────────────────────────────────────────
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  // ── Study rooms booked counter ───────────────────────────────────────────────
+  const [studyRoomsBooked, setStudyRoomsBooked] = useState(0);
+
+  // ── Requests fulfilled counter ───────────────────────────────────────────────
+  const [requestsFulfilledCount, setRequestsFulfilledCount] = useState(0);
+
   // ── Onboarding state ─────────────────────────────────────────────────────────
   const [onboardingDone, setOnboardingDone] = useState(() => {
     return !!localStorage.getItem("symbio_profile");
@@ -525,6 +547,7 @@ export default function App() {
     setStudyRooms((prev) =>
       prev.map((r) => (r.id === id ? { ...r, status: "Busy" } : r)),
     );
+    setStudyRoomsBooked((prev) => prev + 1);
     addActivity({
       icon: "📚",
       text: `${roomNo} booked`,
@@ -542,6 +565,7 @@ export default function App() {
       prev.map((r) => (r.id === id ? { ...r, fulfilled: true } : r)),
     );
     addPoints(15);
+    setRequestsFulfilledCount((prev) => prev + 1);
     addActivity({
       icon: "🙌",
       text: "Request fulfilled! +15 Green Points",
@@ -585,17 +609,46 @@ export default function App() {
     }
   };
 
+  // ── Admin handlers ────────────────────────────────────────────────────────────
+  const handleAddBorrowItemAdmin = (item: BorrowItem) => {
+    setBorrowItems((prev) => [item, ...prev]);
+    addActivity({
+      icon: "🏫",
+      text: `Admin added "${item.name}" to campus pool`,
+      color: "text-slate-600",
+    });
+  };
+
+  const handleToggleRoomAdmin = (id: bigint) => {
+    setStudyRooms((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? { ...r, status: r.status === "Available" ? "Busy" : "Available" }
+          : r,
+      ),
+    );
+  };
+
+  const handleOpenAdmin = () => {
+    setShowAdminTab(true);
+    setActiveTab("admin");
+    toast.success("Faculty Admin Panel unlocked 🔑");
+  };
+
   const handleResetDemo = () => {
     setGreenPoints(320);
     setItemsLendedCount(1);
     setFoodClaimedCount(23);
     setReturnCount(2);
+    setStudyRoomsBooked(0);
+    setRequestsFulfilledCount(0);
     setBorrowItems(INITIAL_BORROW_ITEMS);
     setMyInventory(INITIAL_MY_INVENTORY);
     setFoodAlerts(INITIAL_FOOD_ALERTS);
     setStudyRooms(INITIAL_STUDY_ROOMS);
     setRequests(INITIAL_REQUESTS);
     setActivityFeed(INITIAL_ACTIVITY_FEED);
+    setShowAdminTab(false);
   };
 
   const handleLogout = () => {
@@ -606,6 +659,8 @@ export default function App() {
     setItemsLendedCount(1);
     setFoodClaimedCount(23);
     setReturnCount(2);
+    setStudyRoomsBooked(0);
+    setRequestsFulfilledCount(0);
     setBorrowItems(INITIAL_BORROW_ITEMS);
     setMyInventory(INITIAL_MY_INVENTORY);
     setFoodAlerts(INITIAL_FOOD_ALERTS);
@@ -613,6 +668,7 @@ export default function App() {
     setRequests(INITIAL_REQUESTS);
     setLeaderboard([]);
     setActivityFeed(INITIAL_ACTIVITY_FEED);
+    setShowAdminTab(false);
     // Reset onboarding so the user can re-enter their name on next login
     localStorage.removeItem("symbio_profile");
     setOnboardingDone(false);
@@ -652,10 +708,15 @@ export default function App() {
     );
   }
 
+  const pendingRequests = requests.filter((r) => !r.fulfilled).length;
+
   return (
     <div className="page-bg min-h-screen w-full">
       <div className="app-shell">
-        <main className="content-area min-h-dvh overflow-y-auto">
+        <main
+          key={activeTab}
+          className="content-area min-h-dvh overflow-y-auto"
+        >
           {/* Loading overlay for initial data fetch */}
           {isLoadingData && (
             <div
@@ -685,6 +746,8 @@ export default function App() {
               nextInventoryId={BigInt(200 + myInventory.length)}
               activityFeed={activityFeed}
               localName={localName}
+              onOpenNotifications={() => setNotificationsOpen(true)}
+              notificationsCount={activityFeed.length}
             />
           )}
           {activeTab === "borrow" && (
@@ -719,8 +782,11 @@ export default function App() {
               leaderboard={leaderboard}
               onLogout={handleLogout}
               onResetDemo={handleResetDemo}
+              onOpenAdmin={handleOpenAdmin}
               localName={localName}
               localDept={localDept}
+              requestsFulfilled={requestsFulfilledCount}
+              studyRoomsBooked={studyRoomsBooked}
             />
           )}
           {activeTab === "requests" && (
@@ -731,8 +797,31 @@ export default function App() {
               userProfile={userProfile}
             />
           )}
+          {activeTab === "admin" && (
+            <AdminScreen
+              borrowItems={borrowItems}
+              foodAlerts={foodAlerts}
+              studyRooms={studyRooms}
+              requests={requests}
+              onAddBorrowItem={handleAddBorrowItemAdmin}
+              onAddFoodAlert={handleAddFoodAlert}
+              onToggleRoom={handleToggleRoomAdmin}
+              nextBorrowId={BigInt(500 + borrowItems.length)}
+              nextFoodId={BigInt(100 + foodAlerts.length)}
+            />
+          )}
         </main>
-        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        <BottomNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          requestsNewCount={pendingRequests}
+          showAdminTab={showAdminTab}
+        />
+        <NotificationsSheet
+          open={notificationsOpen}
+          onClose={() => setNotificationsOpen(false)}
+          feed={activityFeed}
+        />
         <Toaster position="top-right" richColors />
       </div>
     </div>
